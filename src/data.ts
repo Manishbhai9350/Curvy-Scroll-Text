@@ -1,43 +1,53 @@
 const Data = {
-  address: {
-    heading: "Address",
+  name: {
+    heading: "Name",
+    content: ["Manish Dhaka", "aka Developer Manish"],
+  },
+
+  role: {
+    heading: "Role",
+    content: ["Fullstack Creative Developer"],
+  },
+
+  coreFocus: {
+    heading: "Core Focus",
     content: [
-      "Seventeen",
-      "19-20 Great Sutton Street",
-      "London",
-      "EC1V 0DR",
-      "UK",
+      "Frontend Engineering",
+      "Creative Development",
+      "Interactive Web Experiences",
     ],
   },
 
-  currentTime: {
-    heading: "Current Time",
-    content: ["12:27:25 (GMT)"],
+  frontendSkills: {
+    heading: "Frontend",
+    content: [
+      "HTML",
+      "CSS",
+      "JavaScript",
+      "React",
+      "Next.js",
+      "Frontend Libraries",
+    ],
   },
 
-  businessEmail: {
-    heading: "Business Enquiry Email",
-    content: ["amelia@seventeenagency.com"],
+  backendSkills: {
+    heading: "Backend",
+    content: [
+      "Node.js",
+      "API Development",
+      "Fullstack Systems",
+    ],
   },
 
-  generalEmail: {
-    heading: "General Enquiries",
-    content: ["hello@seventeenagency.com"],
-  },
-
-  jobsEmail: {
-    heading: "Job Enquiries",
-    content: ["hiring@seventeenagency.com"],
-  },
-
-  phone: {
-    heading: "Telephone",
-    content: ["+44 (0) 20 7242 5017"],
-  },
-
-  usaRepresentation: {
-    heading: "USA Representation",
-    content: ["jeff@atrbute.com"],
+  creativeSkills: {
+    heading: "Creative Tech",
+    content: [
+      "Blender",
+      "Three.js",
+      "TSL",
+      "Shaders",
+      "WebGL",
+    ],
   },
 };
 

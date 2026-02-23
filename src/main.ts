@@ -1,9 +1,20 @@
 import "./style.css";
 import Data from "./data";
 import gsap from "gsap";
+import {
+  Curve,
+  CurveGaussian,
+  CurveParabola,
+  CurvePower,
+  CurveSine,
+  CurveSoft,
+} from "./Maath";
 
 const main = document.querySelector("main")!;
 const Logo = document.querySelector("div.logo")!;
+
+let BaseCurve = Curve;
+let BaseCurveLERP = 0.15;
 
 let Texties: {
   el: HTMLDivElement;
@@ -17,21 +28,21 @@ let Texties: {
 
 let LogoRect = Logo.getBoundingClientRect();
 
-let Radius = LogoRect.width / 2 + 30;
+let Radius = (LogoRect.width / 2) * 1.5;
 
-let Radii = document.createElement('div')
-main.appendChild(Radii)
-gsap.set(Radii,{
-  width: 2 * Radius,
-  height: 2 * Radius,
-  borderRadius: "50%",
-  background:'red',
-  position:'absolute',
-  top:'50%',
-  left:'50%',
-  xPercent:-50,
-  yPercent:-50
-})
+// let Radii = document.createElement("div");
+// main.appendChild(Radii);
+// gsap.set(Radii, {
+//   width: 2 * Radius,
+//   height: 2 * Radius,
+//   borderRadius: "50%",
+//   background: "red",
+//   position: "absolute",
+//   top: "50%",
+//   left: "50%",
+//   xPercent: -50,
+//   yPercent: -50,
+// });
 
 let DataAdded = false;
 
@@ -46,8 +57,13 @@ let Velocity = {
 let MaxVelocity = 100;
 let ScrollOffset = 0;
 
-let Headings: HTMLParagraphElement[] = [];
-let Contents: HTMLParagraphElement[] = [];
+const Elements: {
+  el: HTMLParagraphElement;
+  curveFactor: number;
+  targetX: number;
+  X: number;
+  LERP: number;
+}[] = [];
 
 function AddTexty(): HTMLDivElement {
   const Texty = document.createElement("div");
@@ -65,10 +81,17 @@ function AddTexty(): HTMLDivElement {
     };
 
     const Heading = document.createElement("div");
+    Heading.dataset.type = "heading";
     Heading.classList.add("heading");
     Heading.innerHTML = `<p>${heading}</p>`;
 
-    Headings.push(Heading);
+    Elements.push({
+      el: Heading,
+      curveFactor: -1,
+      targetX: 0,
+      X: 0,
+      LERP: BaseCurveLERP,
+    });
 
     const ContentsContainer: HTMLParagraphElement[] = [];
     const Content = document.createElement("div");
@@ -76,11 +99,20 @@ function AddTexty(): HTMLDivElement {
 
     content.forEach((c) => {
       const p = document.createElement("p");
+      p.dataset.type = "content";
       p.textContent = c;
       ContentsContainer.push(p);
     });
 
-    Contents.push(...ContentsContainer);
+    Elements.push(
+      ...ContentsContainer.map((C) => ({
+        el: C,
+        curveFactor: 1,
+        targetX: 0,
+        X: 0,
+        LERP: BaseCurveLERP,
+      })),
+    );
 
     Content.append(...ContentsContainer);
 
@@ -123,6 +155,7 @@ function AppendData() {
   main.appendChild(Texty2);
 
   DataAdded = true;
+  OnResize();
 }
 
 AppendData();
@@ -158,6 +191,32 @@ function Render() {
   });
 
   // Circular Animation
+  const velocityFactor = Math.min(Math.abs(Velocity.current) / MaxVelocity, 1);
+  const viewportCenter = innerHeight * 0.5;
+
+  Elements.forEach((H) => {
+    const rect = H.el.getBoundingClientRect();
+    const elementCenter = rect.top + rect.height / 2;
+
+    const deltaY = elementCenter - viewportCenter;
+
+    if (Math.abs(deltaY) <= Radius) {
+      const curve = BaseCurve(deltaY, Radius);
+      // tiny velocity influence (direction aware)
+      const velocityPush = Math.abs(Velocity.current) * 0.015;
+
+      // base curve stays dominant
+      H.targetX = curve * H.curveFactor + velocityPush;
+    } else {
+      H.targetX = 0;
+    }
+
+    const dynamicLERP = H.LERP + velocityFactor * 0.25;
+    H.X += (H.targetX - H.X) * dynamicLERP;
+    gsap.set(H.el, {
+      x: H.X,
+    });
+  });
 }
 
 gsap.ticker.add((_, dt) => {
@@ -251,6 +310,17 @@ function OnMouse(ev: WheelEvent) {
   }, 200);
 }
 
+function OnResize() {
+  Elements.forEach((E) => {
+    const IsHeading = E.el.dataset.type == "heading";
+    if (innerWidth <= 1000) {
+      E.curveFactor = 0;
+    } else {
+      E.curveFactor = IsHeading ? -1 : 1;
+    }
+  });
+}
+
 window.addEventListener("mousemove", MouseMove);
 window.addEventListener("wheel", OnMouse, { passive: true });
 window.addEventListener(
@@ -279,3 +349,5 @@ window.addEventListener(
   },
   { passive: true },
 );
+
+window.addEventListener("resize", OnResize);

@@ -119,10 +119,27 @@ main {
 
 
 .logo {
-  width: 60px;
-  height: 60px;
+  width: 100px;
+  height: 100px;
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%,-50%);
+}
+
+
+@media (max-width:1000px) {
+  .texty {
+    .text {
+      flex-direction: column;
+      p {
+        font-size: .8rem;
+      }
+    }
+    padding-left: 120px;
+  }
+  .logo {
+    left: 10px;
+    transform: translateY(-50%);
+  }
 }
