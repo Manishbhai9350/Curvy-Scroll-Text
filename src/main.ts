@@ -3,16 +3,39 @@ import Data from "./data";
 import gsap from "gsap";
 
 const main = document.querySelector("main")!;
+const Logo = document.querySelector("div.logo")!;
+
 let Texties: {
   el: HTMLDivElement;
   position: {
     y: number;
   };
+  initial: {
+    y: number;
+  };
 }[] = [];
+
+let LogoRect = Logo.getBoundingClientRect();
+
+let Radius = LogoRect.width / 2 + 30;
+
+let Radii = document.createElement('div')
+main.appendChild(Radii)
+gsap.set(Radii,{
+  width: 2 * Radius,
+  height: 2 * Radius,
+  borderRadius: "50%",
+  background:'red',
+  position:'absolute',
+  top:'50%',
+  left:'50%',
+  xPercent:-50,
+  yPercent:-50
+})
 
 let DataAdded = false;
 
-let OffsetHeight = 100
+let OffsetHeight = 100;
 let Velocity = {
   current: 0,
   target: 0,
@@ -22,6 +45,9 @@ let Velocity = {
 };
 let MaxVelocity = 100;
 let ScrollOffset = 0;
+
+let Headings: HTMLParagraphElement[] = [];
+let Contents: HTMLParagraphElement[] = [];
 
 function AddTexty(): HTMLDivElement {
   const Texty = document.createElement("div");
@@ -42,17 +68,21 @@ function AddTexty(): HTMLDivElement {
     Heading.classList.add("heading");
     Heading.innerHTML = `<p>${heading}</p>`;
 
-    const Contents: HTMLParagraphElement[] = [];
+    Headings.push(Heading);
+
+    const ContentsContainer: HTMLParagraphElement[] = [];
     const Content = document.createElement("div");
     Content.classList.add("content");
 
     content.forEach((c) => {
       const p = document.createElement("p");
       p.textContent = c;
-      Contents.push(p);
+      ContentsContainer.push(p);
     });
 
-    Content.append(...Contents);
+    Contents.push(...ContentsContainer);
+
+    Content.append(...ContentsContainer);
 
     Text.appendChild(Heading);
     Text.appendChild(Content);
@@ -68,20 +98,26 @@ function AppendData() {
   Texties.push({
     el: Texty1,
     position: {
-      y: innerHeight * 0.5,
+      y: innerHeight * 0.3,
+    },
+    initial: {
+      y: innerHeight * 0.3,
     },
   });
   Texties.push({
     el: Texty2,
     position: {
-      y: innerHeight * 1.5,
+      y: innerHeight * 1.3,
+    },
+    initial: {
+      y: innerHeight * 1.3,
     },
   });
   gsap.set(Texty1, {
-    y: innerHeight * 0.5,
+    y: innerHeight * 0.3,
   });
   gsap.set(Texty1, {
-    y: innerHeight * 1.5,
+    y: innerHeight * 1.3,
   });
   main.appendChild(Texty1);
   main.appendChild(Texty2);
@@ -93,13 +129,35 @@ AppendData();
 
 function Render() {
   if (!DataAdded) return;
-  Texties.forEach((T) => {
-    const y = T.position.y + ScrollOffset;
 
+  const itemHeight = innerHeight;
+
+  // move top → bottom (when fully above viewport)
+  while (Texties[0].position.y + ScrollOffset <= -itemHeight) {
+    const first = Texties.shift()!;
+    const last = Texties[Texties.length - 1];
+
+    first.position.y = last.position.y + itemHeight;
+    Texties.push(first);
+  }
+
+  // move bottom → top (when fully below viewport)
+  while (Texties[Texties.length - 1].position.y + ScrollOffset >= innerHeight) {
+    const last = Texties.pop()!;
+    const first = Texties[0];
+
+    last.position.y = first.position.y - itemHeight;
+    Texties.unshift(last);
+  }
+
+  // render
+  Texties.forEach((T) => {
     gsap.set(T.el, {
-      y,
+      y: T.position.y + ScrollOffset,
     });
   });
+
+  // Circular Animation
 }
 
 gsap.ticker.add((_, dt) => {
