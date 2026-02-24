@@ -83,7 +83,7 @@ main {
 .texty {
   position: absolute;
   width: 100vw;
-  height: 100vh;
+  height: 150vh;
   display: flex;
   flex-direction: column;
   justify-content: center;

@@ -3,11 +3,11 @@ import Data from "./data";
 import gsap from "gsap";
 import {
   Curve,
-  CurveGaussian,
-  CurveParabola,
-  CurvePower,
-  CurveSine,
-  CurveSoft,
+  // CurveGaussian,
+  // CurveParabola,
+  // CurvePower,
+  // CurveSine,
+  // CurveSoft,
 } from "./Maath";
 
 const main = document.querySelector("main")!;
@@ -16,37 +16,22 @@ const Logo = document.querySelector("div.logo")!;
 let BaseCurve = Curve;
 let BaseCurveLERP = 0.15;
 
+/* --------------------------- TEXTY STATE --------------------------- */
+
 let Texties: {
   el: HTMLDivElement;
-  position: {
-    y: number;
-  };
-  initial: {
-    y: number;
-  };
+  height: number;
+  position: { y: number };
+  initial: { y: number };
 }[] = [];
 
 let LogoRect = Logo.getBoundingClientRect();
-
 let Radius = (LogoRect.width / 2) * 1.5;
-
-// let Radii = document.createElement("div");
-// main.appendChild(Radii);
-// gsap.set(Radii, {
-//   width: 2 * Radius,
-//   height: 2 * Radius,
-//   borderRadius: "50%",
-//   background: "red",
-//   position: "absolute",
-//   top: "50%",
-//   left: "50%",
-//   xPercent: -50,
-//   yPercent: -50,
-// });
 
 let DataAdded = false;
 
-let OffsetHeight = 100;
+/* --------------------------- SCROLL PHYSICS --------------------------- */
+
 let Velocity = {
   current: 0,
   target: 0,
@@ -54,8 +39,11 @@ let Velocity = {
   LERP1: 0.1,
   LERP2: 0.2,
 };
+
 let MaxVelocity = 100;
 let ScrollOffset = 0;
+
+/* --------------------------- CURVE ELEMENTS --------------------------- */
 
 const Elements: {
   el: HTMLParagraphElement;
@@ -65,20 +53,16 @@ const Elements: {
   LERP: number;
 }[] = [];
 
+/* --------------------------- BUILD TEXTY --------------------------- */
+
 function AddTexty(): HTMLDivElement {
   const Texty = document.createElement("div");
   Texty.classList.add("texty");
 
-  for (const key in Data) {
-    if (!Object.hasOwn(Data, key)) continue;
-
+  Object.values(Data).forEach((v) => {
+    const { heading, content } = v;
     const Text = document.createElement("div");
     Text.classList.add("text");
-
-    const { heading, content } = Data[key] as {
-      heading: string;
-      content: string[];
-    };
 
     const Heading = document.createElement("div");
     Heading.dataset.type = "heading";
@@ -93,19 +77,20 @@ function AddTexty(): HTMLDivElement {
       LERP: BaseCurveLERP,
     });
 
-    const ContentsContainer: HTMLParagraphElement[] = [];
     const Content = document.createElement("div");
     Content.classList.add("content");
+
+    const paragraphs: HTMLParagraphElement[] = [];
 
     content.forEach((c) => {
       const p = document.createElement("p");
       p.dataset.type = "content";
       p.textContent = c;
-      ContentsContainer.push(p);
+      paragraphs.push(p);
     });
 
     Elements.push(
-      ...ContentsContainer.map((C) => ({
+      ...paragraphs.map((C) => ({
         el: C,
         curveFactor: 1,
         targetX: 0,
@@ -114,45 +99,45 @@ function AddTexty(): HTMLDivElement {
       })),
     );
 
-    Content.append(...ContentsContainer);
-
+    Content.append(...paragraphs);
     Text.appendChild(Heading);
     Text.appendChild(Content);
     Texty.appendChild(Text);
-  }
+  });
 
   return Texty;
 }
 
+/* --------------------------- APPEND --------------------------- */
+
 function AppendData() {
   const Texty1 = AddTexty();
   const Texty2 = AddTexty();
-  Texties.push({
-    el: Texty1,
-    position: {
-      y: innerHeight * 0.3,
-    },
-    initial: {
-      y: innerHeight * 0.3,
-    },
-  });
-  Texties.push({
-    el: Texty2,
-    position: {
-      y: innerHeight * 1.3,
-    },
-    initial: {
-      y: innerHeight * 1.3,
-    },
-  });
-  gsap.set(Texty1, {
-    y: innerHeight * 0.3,
-  });
-  gsap.set(Texty1, {
-    y: innerHeight * 1.3,
-  });
+
   main.appendChild(Texty1);
   main.appendChild(Texty2);
+
+  const h1 = Texty1.offsetHeight;
+  const h2 = Texty2.offsetHeight;
+
+  const startY = innerHeight * 0.3;
+
+  Texties.push({
+    el: Texty1,
+    height: h1,
+    position: { y: startY },
+    initial: { y: startY },
+  });
+
+  Texties.push({
+    el: Texty2,
+    height: h2,
+    position: { y: startY + h1 },
+    initial: { y: startY + h1 },
+  });
+
+  gsap.set(Texty1, { y: startY });
+  gsap.set(Texty2, { y: startY + h1 });
 
   DataAdded = true;
   OnResize();
@@ -160,64 +145,60 @@ function AppendData() {
 
 AppendData();
 
+/* --------------------------- RENDER --------------------------- */
+
 function Render() {
   if (!DataAdded) return;
 
-  const itemHeight = innerHeight;
+  /* ---------- INFINITE STACK ---------- */
 
-  // move top → bottom (when fully above viewport)
-  while (Texties[0].position.y + ScrollOffset <= -itemHeight) {
+  while (Texties[0].position.y + ScrollOffset <= -Texties[0].height) {
     const first = Texties.shift()!;
     const last = Texties[Texties.length - 1];
 
-    first.position.y = last.position.y + itemHeight;
+    first.position.y = last.position.y + last.height;
     Texties.push(first);
   }
 
-  // move bottom → top (when fully below viewport)
   while (Texties[Texties.length - 1].position.y + ScrollOffset >= innerHeight) {
     const last = Texties.pop()!;
     const first = Texties[0];
 
-    last.position.y = first.position.y - itemHeight;
+    last.position.y = first.position.y - last.height;
     Texties.unshift(last);
   }
 
-  // render
   Texties.forEach((T) => {
-    gsap.set(T.el, {
-      y: T.position.y + ScrollOffset,
-    });
+    gsap.set(T.el, { y: T.position.y + ScrollOffset });
   });
 
-  // Circular Animation
-  const velocityFactor = Math.min(Math.abs(Velocity.current) / MaxVelocity, 1);
+  /* ---------- CURVE ANIMATION ---------- */
+
   const viewportCenter = innerHeight * 0.5;
 
   Elements.forEach((H) => {
     const rect = H.el.getBoundingClientRect();
     const elementCenter = rect.top + rect.height / 2;
-
     const deltaY = elementCenter - viewportCenter;
 
     if (Math.abs(deltaY) <= Radius) {
       const curve = BaseCurve(deltaY, Radius);
-      // tiny velocity influence (direction aware)
-      const velocityPush = Math.abs(Velocity.current) * 0.015;
 
-      // base curve stays dominant
+      // tiny velocity influence (direction aware)
+      const velocityPush = Velocity.current * 0.02;
+
       H.targetX = curve * H.curveFactor + velocityPush;
     } else {
       H.targetX = 0;
     }
 
-    const dynamicLERP = H.LERP + velocityFactor * 0.25;
-    H.X += (H.targetX - H.X) * dynamicLERP;
-    gsap.set(H.el, {
-      x: H.X,
-    });
+    H.X += (H.targetX - H.X) * H.LERP;
+
+    gsap.set(H.el, { x: H.X });
   });
 }
+
+/* --------------------------- LOOP --------------------------- */
 
 gsap.ticker.add((_, dt) => {
   if (!DataAdded) return;
@@ -228,27 +209,16 @@ gsap.ticker.add((_, dt) => {
   Render();
 });
 
+/* --------------------------- TOUCH --------------------------- */
+
 let lastTouchY = 0;
 let lastTouchTime = 0;
-
-/* --------------------------- TOUCH EVENTS --------------------------- */
-
-let IsTouching = false;
-
-function TouchStartHover() {
-  IsTouching = true;
-}
-
-function TouchEndHover() {
-  IsTouching = false;
-}
 
 function TouchStart(e: TouchEvent) {
   if (!e.touches.length) return;
 
   lastTouchY = e.touches[0].clientY;
   lastTouchTime = performance.now();
-
   Velocity.target = 0;
 }
 
@@ -275,12 +245,7 @@ function TouchEnd() {
   Velocity.LERP = Velocity.LERP2;
 }
 
-function MouseMove(e: MouseEvent) {}
-
-function TouchMove(e: TouchEvent) {
-  if (!e.touches.length) return;
-  const t = e.touches[0];
-}
+/* --------------------------- MOUSE --------------------------- */
 
 let lastTime = performance.now();
 let scrollEndTimer: number | undefined;
@@ -310,44 +275,23 @@ function OnMouse(ev: WheelEvent) {
   }, 200);
 }
 
+/* --------------------------- RESIZE --------------------------- */
+
 function OnResize() {
+  Texties.forEach((T) => {
+    T.height = T.el.offsetHeight;
+  });
+
   Elements.forEach((E) => {
-    const IsHeading = E.el.dataset.type == "heading";
-    if (innerWidth <= 1000) {
-      E.curveFactor = 0;
-    } else {
-      E.curveFactor = IsHeading ? -1 : 1;
-    }
+    const isHeading = E.el.dataset.type === "heading";
+    E.curveFactor = innerWidth <= 1000 ? 0 : isHeading ? -1 : 1;
   });
 }
 
-window.addEventListener("mousemove", MouseMove);
+/* --------------------------- EVENTS --------------------------- */
+
 window.addEventListener("wheel", OnMouse, { passive: true });
-window.addEventListener(
-  "touchstart",
-  (e) => {
-    TouchStart(e);
-    TouchStartHover();
-  },
-  { passive: true },
-);
-
-window.addEventListener(
-  "touchmove",
-  (e) => {
-    TouchMove(e);
-    TouchMoveScroll(e);
-  },
-  { passive: true },
-);
-
-window.addEventListener(
-  "touchend",
-  () => {
-    TouchEnd();
-    TouchEndHover();
-  },
-  { passive: true },
-);
-
+window.addEventListener("touchstart", TouchStart, { passive: true });
+window.addEventListener("touchmove", TouchMoveScroll, { passive: true });
+window.addEventListener("touchend", TouchEnd, { passive: true });
 window.addEventListener("resize", OnResize);
